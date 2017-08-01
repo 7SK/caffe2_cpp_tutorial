@@ -5,6 +5,10 @@
 #include "caffe2/core/context_gpu.h"
 #endif
 
+#ifdef WITH_CUDA
+#include "caffe2/core/context_hip.h"
+#endif
+
 CAFFE2_DEFINE_string(optimizer, "adam",
                      "Training optimizer: sgd/momentum/adagrad/adam");
 CAFFE2_DEFINE_string(device, "cudnn", "Computation device: cpu/cuda/cudnn");
@@ -16,15 +20,22 @@ static const std::set<std::string> optimizer_types({"sgd", "momentum",
 
 namespace caffe2 {
 
-bool cmd_setup_cuda() {
+bool cmd_setup_gpu() {
   DeviceOption option;
-  option.set_device_type(CUDA);
 #ifdef WITH_CUDA
+  option.set_device_type(CUDA);
   new CUDAContext(option);
   std::cout << std::endl << "using CUDA" << std::endl;
   return true;
 #else
-  return false;
+  #ifdef WITH_HIP
+    option.set_device_type(HIP);
+    new HIPContext(option);
+    std::cout << std::endl << "using HIP" << std::endl;
+    return true;
+  #else
+    return false;
+  #endif
 #endif
 }
 
@@ -49,7 +60,7 @@ bool cmd_init(const std::string title) {
     return false;
   }
 
-  if (FLAGS_device != "cpu") cmd_setup_cuda();
+  if (FLAGS_device != "cpu") cmd_setup_gpu();
 
   std::cout << "optimizer: " << FLAGS_optimizer << std::endl;
   std::cout << "device: " << FLAGS_device << std::endl;

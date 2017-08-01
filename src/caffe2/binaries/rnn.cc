@@ -24,8 +24,14 @@ void AddFC(NetUtil &init, NetUtil &predict, const std::string &input,
   predict.AddInput(output + "_w");
   init.AddConstantFillOp({out_size}, output + "_b");
   predict.AddInput(output + "_b");
+#ifdef WITH_CUDA
   predict.AddFcOp(input, output + "_w", output + "_b", output, 2)
       ->set_engine("CUDNN");
+#endif
+#ifdef WITH_HIP
+  predict.AddFcOp(input, output + "_w", output + "_b", output, 2)
+      ->set_engine("MIOPEN");
+#endif
 }
 
 void AddLSTM(NetUtil &init, NetUtil &predict, const std::string &input_blob,
@@ -98,7 +104,7 @@ void run() {
   std::cout << "dump_model: " << (FLAGS_dump_model ? "true" : "false")
             << std::endl;
 
-  if (FLAGS_device != "cpu") cmd_setup_cuda();
+  if (FLAGS_device != "cpu") cmd_setup_gpu();
 
   std::cout << std::endl;
 
@@ -210,10 +216,10 @@ void run() {
   prepare.AddInput(cell_state);
 
   if (FLAGS_device != "cpu") {
-    init.SetDeviceCUDA();
-    forward.SetDeviceCUDA();
-    train.SetDeviceCUDA();
-    prepare.SetDeviceCUDA();
+    init.SetDeviceGPU();
+    forward.SetDeviceGPU();
+    train.SetDeviceGPU();
+    prepare.SetDeviceGPU();
   }
 
   if (FLAGS_dump_model) {

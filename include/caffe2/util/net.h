@@ -161,7 +161,7 @@ class NetUtil {
   std::string Proto();
   std::string Short();
   void Print();
-  void SetDeviceCUDA();
+  void SetDeviceGPU();
 
  protected:
   NetDef& net_;

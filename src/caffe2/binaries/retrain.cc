@@ -91,13 +91,20 @@ void run() {
 
   NetDef first_init_model, first_predict_model, second_init_model,
       second_predict_model;
+
+#ifdef WITH_CUDA
   split_model(full_init_model, full_predict_model, FLAGS_layer,
               first_init_model, first_predict_model, second_init_model,
               second_predict_model, FLAGS_device != "cudnn");
-
+#endif
+#ifdef WITH_HIP
+  split_model(full_init_model, full_predict_model, FLAGS_layer,
+              first_init_model, first_predict_model, second_init_model,
+              second_predict_model, FLAGS_device != "miopen");
+#endif
   if (FLAGS_device != "cpu") {
-    NetUtil(first_init_model).SetDeviceCUDA();
-    NetUtil(first_predict_model).SetDeviceCUDA();
+    NetUtil(first_init_model).SetDeviceGPU();
+    NetUtil(first_predict_model).SetDeviceGPU();
   }
 
   pre_process(image_files, db_paths, first_init_model, first_predict_model,
@@ -118,8 +125,8 @@ void run() {
 
   if (FLAGS_device != "cpu") {
     for (int i = 0; i < kRunNum; i++) {
-      NetUtil(init_model[i]).SetDeviceCUDA();
-      NetUtil(predict_model[i]).SetDeviceCUDA();
+      NetUtil(init_model[i]).SetDeviceGPU();
+      NetUtil(predict_model[i]).SetDeviceGPU();
     }
   }
 

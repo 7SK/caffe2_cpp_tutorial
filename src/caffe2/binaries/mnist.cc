@@ -168,7 +168,11 @@ TensorCPU GetTensor(const Blob &blob) {
 #ifdef WITH_CUDA
   return TensorCPU(blob.Get<TensorCUDA>());
 #else
-  return blob.Get<TensorCPU>();
+  #ifdef WITH_HIP
+    return TensorCPU(blob.Get<TensorHIP>());
+  #else
+    return blob.Get<TensorCPU>();
+  #endif
 #endif
 }
 
@@ -196,14 +200,21 @@ void run() {
   std::cout << "force_cpu: " << (FLAGS_force_cpu ? "true" : "false")
             << std::endl;
 
-#ifdef WITH_CUDA
   if (!FLAGS_force_cpu) {
+#ifdef WITH_CUDA
     DeviceOption option;
     option.set_device_type(CUDA);
     new CUDAContext(option);
     std::cout << std::endl << "using CUDA" << std::endl;
-  }
 #endif
+#ifdef WITH_HIP
+    DeviceOption option;
+    option.set_device_type(HIP);
+    new HIPContext(option);
+    std::cout << std::endl << "using HIP" << std::endl;
+#endif
+  }
+
 
   // >>> from caffe2.python import core, cnn, net_drawer, workspace, visualize,
   // brew
@@ -261,14 +272,22 @@ void run() {
   // >>> AddLeNetModel(deploy_model, "data")
   AddLeNetModel(initDeploy, predictDeploy, false);
 
-#ifdef WITH_CUDA
+
   if (!FLAGS_force_cpu) {
+#ifdef WITH_CUDA
     initTrainModel.mutable_device_option()->set_device_type(CUDA);
     predictTrainModel.mutable_device_option()->set_device_type(CUDA);
     initTestModel.mutable_device_option()->set_device_type(CUDA);
     predictTestModel.mutable_device_option()->set_device_type(CUDA);
-  }
 #endif
+#ifdef WITH_HIP
+    initTrainModel.mutable_device_option()->set_device_type(HIP);
+    predictTrainModel.mutable_device_option()->set_device_type(HIP);
+    initTestModel.mutable_device_option()->set_device_type(HIP);
+    predictTestModel.mutable_device_option()->set_device_type(HIP);
+#endif
+  }
+
 
   std::cout << std::endl;
 

@@ -4,6 +4,10 @@
 #include "caffe2/core/context_gpu.h"
 #endif
 
+#ifdef WITH_HIP
+#include "caffe2/core/context_hip.h"
+#endif
+
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 
@@ -790,6 +794,9 @@ std::string net_short_op(const OperatorDef& def) {
   if (def.has_device_option() && def.device_option().has_cuda_gpu_id()) {
     stream << " cuda_gpu_id:" << def.device_option().cuda_gpu_id();
   }
+  if (def.has_device_option() && def.device_option().has_hip_gpu_id()) {
+    stream << " hip_gpu_id:" << def.device_option().hip_gpu_id();
+  }
   if (def.has_is_gradient_op()) {
     stream << " is_gradient_op:true";
   }
@@ -809,6 +816,9 @@ std::string net_short_net(const NetDef& def) {
   }
   if (def.has_device_option() && def.device_option().has_cuda_gpu_id()) {
     stream << "cuda_gpu_id:" << def.device_option().cuda_gpu_id() << std::endl;
+  }
+  if (def.has_device_option() && def.device_option().has_hip_gpu_id()) {
+    stream << "hip_gpu_id:" << def.device_option().hip_gpu_id() << std::endl;
   }
   if (def.has_num_workers()) {
     stream << "num_workers: " << def.num_workers() << std::endl;
@@ -831,9 +841,13 @@ void NetUtil::Print() {
   google::protobuf::TextFormat::Print(net_, &stream);
 }
 
-void NetUtil::SetDeviceCUDA() {
+void NetUtil::SetDeviceGPU() {
 #ifdef WITH_CUDA
   net_.mutable_device_option()->set_device_type(CUDA);
+#endif
+
+#ifdef WITH_HIP
+  net_.mutable_device_option()->set_device_type(HIP);
 #endif
 }
 
@@ -875,6 +889,15 @@ OperatorDef* NetUtil::AddRecurrentNetworkOp(const std::string& seq_lengths,
   }
 #endif
 
+#ifdef WITH_HIP
+  if (!force_cpu) {
+    fc->mutable_device_option()->set_device_type(HIP);
+    sum->mutable_device_option()->set_device_type(HIP);
+    lstm->mutable_device_option()->set_device_type(HIP);
+    forwardModel.mutable_device_option()->set_device_type(HIP);
+  }
+#endif
+
   NetDef backwardModel;
   NetUtil backward(backwardModel);
   backward.SetName("RecurrentBackwardStep");
@@ -900,6 +923,12 @@ OperatorDef* NetUtil::AddRecurrentNetworkOp(const std::string& seq_lengths,
 #ifdef WITH_CUDA
   if (!force_cpu) {
     backwardModel.mutable_device_option()->set_device_type(CUDA);
+  }
+#endif
+
+#ifdef WITH_HIP
+  if (!force_cpu) {
+    backwardModel.mutable_device_option()->set_device_type(HIP);
   }
 #endif
 

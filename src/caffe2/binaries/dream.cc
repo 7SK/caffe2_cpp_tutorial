@@ -117,9 +117,17 @@ void run() {
   NetUtil(base_predict_model).CheckLayerAvailable(FLAGS_layer);
   NetDef init_model, dream_model, display_model, unused_model;
   NetUtil init(init_model), dream(dream_model), display(display_model);
+#ifdef WITH_CUDA
   split_model(base_init_model, base_predict_model, FLAGS_layer, init_model,
               dream_model, unused_model, unused_model, FLAGS_device != "cudnn",
               false);
+#endif
+
+#ifdef WITH_HIP
+  split_model(base_init_model, base_predict_model, FLAGS_layer, init_model,
+              dream_model, unused_model, unused_model, FLAGS_device != "miopen",
+              false);
+#endif
 
   // add_cout_op(dream_model, { "_conv2/norm2_scale" })->set_engine("CUDNN");
 
@@ -131,11 +139,11 @@ void run() {
   CHECK(image_size > 10) << "train_runs too high or percent_incr too high";
   AddNaive(init_model, dream_model, display_model, image_size);
 
-  // set model to use CUDA
+  // set model to use GPU
   if (FLAGS_device != "cpu") {
-    init.SetDeviceCUDA();
-    dream.SetDeviceCUDA();
-    display.SetDeviceCUDA();
+    init.SetDeviceGPU();
+    dream.SetDeviceGPU();
+    display.SetDeviceGPU();
     // dream.SetEngineCudnnOps();
   }
 

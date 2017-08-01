@@ -78,6 +78,11 @@ void run() {
     NetUtil(full_predict_model).SetEngineOps("CUDNN");
   }
 
+  if (FLAGS_device == "miopen") {
+    NetUtil(full_init_model).SetEngineOps("MIOPEN");
+    NetUtil(full_predict_model).SetEngineOps("MIOPEN");
+  }
+
   if (FLAGS_dump_model) {
     std::cout << NetUtil(full_init_model).Short();
     std::cout << NetUtil(full_predict_model).Short();
@@ -116,8 +121,8 @@ void run() {
 
   if (FLAGS_device != "cpu") {
     for (int i = 0; i < kRunNum; i++) {
-      NetUtil(init_model[i]).SetDeviceCUDA();
-      NetUtil(predict_model[i]).SetDeviceCUDA();
+      NetUtil(init_model[i]).SetDeviceGPU();
+      NetUtil(predict_model[i]).SetDeviceGPU();
     }
   }
 

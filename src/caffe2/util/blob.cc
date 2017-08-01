@@ -5,12 +5,21 @@
 #include "caffe2/core/context_gpu.h"
 #endif
 
+#ifdef WITH_HIP
+#include "caffe2/core/context_hip.h"
+#endif
+
 namespace caffe2 {
 
 TensorCPU BlobUtil::Get() {
 #ifdef WITH_CUDA
   if (blob_.IsType<TensorCUDA>()) {
     return TensorCPU(blob_.Get<TensorCUDA>());
+  }
+#endif
+#ifdef WITH_HIP
+  if (blob_.IsType<TensorHIP>()) {
+    return TensorCPU(blob_.Get<TensorHIP>());
   }
 #endif
   return blob_.Get<TensorCPU>();
@@ -20,6 +29,14 @@ void BlobUtil::Set(const TensorCPU &value, bool force_cuda) {
 #ifdef WITH_CUDA
   if (force_cuda || blob_.IsType<TensorCUDA>()) {
     auto tensor = blob_.GetMutable<TensorCUDA>();
+    tensor->ResizeLike(value);
+    tensor->ShareData(value);
+    return;
+  }
+#endif
+#ifdef WITH_HIP
+  if (force_cuda || blob_.IsType<TensorHIP>()) {
+    auto tensor = blob_.GetMutable<TensorHIP>();
     tensor->ResizeLike(value);
     tensor->ShareData(value);
     return;

@@ -287,7 +287,11 @@ void split_model(NetDef &base_init_model, NetDef &base_predict_model,
         (is_first ? first_predict_model : second_predict_model).add_op();
     new_op->CopyFrom(op);
     if (!force_cpu) {
+#ifdef WITH_CUDA
       new_op->set_engine("CUDNN");  // TODO: not here
+#else
+      new_op->set_engine("MIOPEN");
+#endif
     }
   }
 

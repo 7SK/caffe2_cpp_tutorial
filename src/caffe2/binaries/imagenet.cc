@@ -62,7 +62,7 @@ void run() {
   std::cout << "size_to_fit: " << FLAGS_size_to_fit << std::endl;
   std::cout << "device: " << FLAGS_device << std::endl;
 
-  if (FLAGS_device != "cpu") cmd_setup_cuda();
+  if (FLAGS_device != "cpu") cmd_setup_gpu();
 
   std::cout << std::endl;
 
@@ -89,10 +89,10 @@ void run() {
                           .tellg();
   auto model_size = init_size + predict_size;
 
-  // set model to use CUDA
+  // set model to use GPU
   if (FLAGS_device != "cpu") {
-    init.SetDeviceCUDA();
-    predict.SetDeviceCUDA();
+    init.SetDeviceGPU();
+    predict.SetDeviceGPU();
   }
 
   if (FLAGS_dump_model) {
